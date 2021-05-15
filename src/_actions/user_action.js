@@ -1,4 +1,6 @@
 import axios from 'axios'
+import Api from "../util/Api";
+
 import {
     LOGIN_USER,
     REGISTER_USER,
@@ -7,7 +9,7 @@ import {
 
 export function loginUser(dataToSubmit) {
 
-    const request = axios.post('/api/login', dataToSubmit)
+    const request = Api.post('/api/login', dataToSubmit)
         .then(response => response)
         .catch(err => err.response)
 
@@ -20,7 +22,7 @@ export function loginUser(dataToSubmit) {
 
 export function registerUser(dataToSubmit) {
 
-    const request = axios.post('/api/members', dataToSubmit)
+    const request = Api.post('/api/members', dataToSubmit)
         .then(response => response)
         .catch(err => err.response)
 
@@ -33,7 +35,7 @@ export function registerUser(dataToSubmit) {
 
 export function auth(token) {
 
-    const request = axios.get('/api/authentication', {
+    const request = Api.get('/api/authentication', {
         headers: {
             'Content-Type': 'application/json',
             'X-AUTH-TOKEN': `${token}`,
