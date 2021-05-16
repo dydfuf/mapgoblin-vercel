@@ -27,7 +27,7 @@
         ]
       },
       {
-        "source": "/api/(.*)",
+        "source": "https://www.mapgoblin.kro.kr/",
         "headers": [
           { "key": "Access-Control-Allow-Credentials", "value": "true" },
           { "key": "Access-Control-Allow-Origin", "value": "*" },
