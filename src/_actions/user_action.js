@@ -9,7 +9,7 @@ import {
 
 export function loginUser(dataToSubmit) {
 
-    const request = axios.post('www.mapgoblin.kro.kr/api/login', dataToSubmit)
+    const request = axios.post('https://www.mapgoblin.kro.kr/api/login', dataToSubmit)
         .then(response => response)
         .catch(err => err.response)
 
@@ -22,7 +22,7 @@ export function loginUser(dataToSubmit) {
 
 export function registerUser(dataToSubmit) {
 
-    const request = axios.post('www.mapgoblin.kro.kr/api/members', dataToSubmit)
+    const request = axios.post('https://www.mapgoblin.kro.kr/api/members', dataToSubmit)
         .then(response => response)
         .catch(err => err.response)
 
@@ -35,7 +35,7 @@ export function registerUser(dataToSubmit) {
 
 export function auth(token) {
 
-    const request = axios.get('www.mapgoblin.kro.kr/api/authentication', {
+    const request = axios.get('https://www.mapgoblin.kro.kr/api/authentication', {
         headers: {
             'Content-Type': 'application/json',
             'X-AUTH-TOKEN': `${token}`,
