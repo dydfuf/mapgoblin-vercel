@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const Api = axios.create({
-    baseURL: 'http://ec2-3-35-212-67.ap-northeast-2.compute.amazonaws.com/api',
+    baseURL: 'www.mapgoblin.kro.kr',
     headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json',
