@@ -1,21 +1,21 @@
-language: node_js
+language: node_js # 언어는 node js
 node_js:
-  - '14.15.3'
+  - '14.15.3' # node js 의 버전
 
-env:
+env: # 환경변수
   - CI: false
 
-branches:
+branches: # 브랜치
   only:
     - release/0.1
 
 cache:
-  directories:
+  directories: # node module 을 캐시
     - node_modules
 script:
-  - yarn build
+  - yarn build # 보통 여기 테스트를 실행하는 스크립트가 들어감
 
-before_deploy:
+before_deploy: # 배포전 배포파일을 압축
   - rm -rf node_modules
   - zip -r travis .
   - mkdir -p deploy
