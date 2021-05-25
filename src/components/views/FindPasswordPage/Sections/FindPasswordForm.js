@@ -124,7 +124,7 @@ function FindPasswordForm(props) {
                                 password: values.password
                             }
 
-                            axios.post(`/api/members/${userId}/password`, dataToSubmit, {
+                            axios.post(`/members/${userId}/password`, dataToSubmit, {
                                 headers: {
                                     'Content-Type' : 'application/json',
                                     'X-AUTH-TOKEN' : `${userToken}`,
