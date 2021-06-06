@@ -7,7 +7,7 @@ const AutoplaySlider = withAutoplay(AwesomeSlider);
 
 function MainContentSlider() {
     return (
-        <div style={{ width: '100%', height: '60vmin', display: 'block', position: 'relative', marginLeft: 'auto', marginRight: 'auto' }}>
+        <div style={{ width: '100%', height: '550px', display: 'block', position: 'relative', marginLeft: 'auto', marginRight: 'auto' }}>
             <AutoplaySlider
                 fillParent={true}
                 play={true}
