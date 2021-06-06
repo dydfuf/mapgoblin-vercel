@@ -1,13 +1,16 @@
-import React, { useState } from 'react'
+import React, {useEffect, useState} from 'react'
 import { Input } from 'antd'
 import {withRouter} from 'react-router-dom';
 import styled from 'styled-components'
+import {useDispatch} from "react-redux";
+import {searchRepository, searchUser} from "../../../_actions/search_action";
 
 const { Search } = Input;
 
 function SearchByRepoName(props) {
 
     const [searchValue, setsearchValue] = useState('')
+
 
     const onChange = (event) => {
         setsearchValue(event.currentTarget.value)
@@ -20,7 +23,7 @@ function SearchByRepoName(props) {
 
     return (
         <SearchContainer>
-            <Search placeholder="레포지토리명으로 검색" onSearch={onSearch} size="large" value={searchValue} onChange={onChange} />
+            <Search placeholder="검색어를 입력해주세요." onSearch={onSearch} size="large" value={searchValue} onChange={onChange} />
         </SearchContainer>
     )
 }

@@ -1,9 +1,10 @@
 import React from 'react'
 import { UserOutlined, DownOutlined } from '@ant-design/icons';
 import styled from 'styled-components'
-import { Menu, Dropdown } from 'antd'
+import {Menu, Dropdown, Image} from 'antd'
 import { useSelector, connect } from 'react-redux';
 import { withRouter } from 'react-router-dom'
+import Api from "../../../util/Api";
 
 function UserIcon(props) {
     //const user = useSelector(state => state.user)
@@ -17,18 +18,18 @@ function UserIcon(props) {
         props.history.push(`/${props.userId}`)
     }
 
-    // let userName = useSelector(state => state.user.userData)
-    // let IuserName = ''
-    // if (userName !== undefined){
-    //     IuserName = userName.data.name
-    // }
-
     const UserMenu = (
         <Menu>
-            <Menu.Item key="0">
-                <div>
-                    User Icon
-                </div>
+            <Menu.Item key="0" style={{verticalAlign:'center'}}>
+                {
+                    props.profile ?
+                        <Image alt="user icon"
+                               src={Api.defaults.baseURL + '/files/' + props.profile}
+                               preview={false}
+                               style={{ borderRadius:"5%", width:"5rem", height:"5rem" }}
+                        />
+                        : <UserOutlined style={{ fontSize: '2rem' }} />
+                }
             </Menu.Item>
             <Menu.Divider />
             <Menu.Item key="1" onClick={onClickMyPageHandler}>
@@ -41,7 +42,15 @@ function UserIcon(props) {
     return (
         <div style={{ display: 'flex' }}>
             <UserIconContainer>
-                <UserOutlined style={{ fontSize: '2rem' }} />
+                {
+                    props.profile ?
+                        <Image alt="user icon"
+                               src={Api.defaults.baseURL + '/files/' + props.profile}
+                               preview={false}
+                               style={{ borderRadius:"1.3rem", width:"2.6rem", height:"2.6rem" }}
+                        />
+                        : <UserOutlined style={{ fontSize: '2rem' }} />
+                }
             </UserIconContainer>
             <div style={{
                 float: 'right'
@@ -57,7 +66,8 @@ function UserIcon(props) {
 
 const mapStateToProps = state => ({
     userId: state.user.userId,
-    userName: state.user.userName
+    userName: state.user.userName,
+    profile: state.user.profile
 })
 
 export default withRouter(connect(mapStateToProps)(UserIcon))

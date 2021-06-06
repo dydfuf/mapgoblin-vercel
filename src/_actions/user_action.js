@@ -1,15 +1,15 @@
 import axios from 'axios'
-import Api from "../util/Api";
-
 import {
     LOGIN_USER,
     REGISTER_USER,
     AUTH_USER,
+    EDIT_USER,
 } from './type.js'
+import Api from "../util/Api";
 
 export function loginUser(dataToSubmit) {
 
-    const request = Api.post('/login', dataToSubmit)
+    const request = axios.post('/api/login', dataToSubmit)
         .then(response => response)
         .catch(err => err.response)
 
@@ -22,7 +22,7 @@ export function loginUser(dataToSubmit) {
 
 export function registerUser(dataToSubmit) {
 
-    const request = Api.post('/members', dataToSubmit)
+    const request = axios.post('/api/members', dataToSubmit)
         .then(response => response)
         .catch(err => err.response)
 
@@ -35,7 +35,7 @@ export function registerUser(dataToSubmit) {
 
 export function auth(token) {
 
-    const request = Api.get('/authentication', {
+    const request = axios.get('/api/authentication', {
         headers: {
             'Content-Type': 'application/json',
             'X-AUTH-TOKEN': `${token}`,
@@ -49,4 +49,16 @@ export function auth(token) {
         payload: request
     }
 
+}
+
+export function editUser(dataToSubmit) {
+
+    const request = Api.post("/members/profile", dataToSubmit)
+        .then(response => response)
+        .catch(err => err.response)
+
+    return {
+        type: EDIT_USER,
+        payload: request
+    }
 }

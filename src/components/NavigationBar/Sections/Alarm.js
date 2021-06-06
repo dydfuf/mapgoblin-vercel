@@ -1,27 +1,30 @@
-import React, {useEffect, useState} from 'react'
+import React, { useEffect, useState } from 'react'
 import { BellOutlined } from '@ant-design/icons';
 import styled from 'styled-components'
-import { Badge, Menu, Dropdown, Divider } from 'antd'
-import {connect, useSelector} from 'react-redux'
-import {withRouter} from 'react-router-dom'
+import { Badge, Menu, Dropdown, Divider, Image } from 'antd'
+import { connect, useSelector, useDispatch } from 'react-redux'
+import { withRouter } from 'react-router-dom'
 import Api from "../../../util/Api";
+import { deleteAllAlarm } from "../../../_actions/alram_action";
 
 function Alarm(props) {
 
-    const alarms = useSelector(state => state.alarm.userAlarm.data)
+    const dispatch = useDispatch()
+
+    const alarms = useSelector(state => state.alarm.navAlarm?.data)
 
     const typemap = {
-        'LIKE' : '를 좋아합니다.',
-        'CLONE' : '를 클론하였습니다.',
-        'REQUEST' : '에 요청을 남겼습니다.',
-        'ISSUE' : '에 이슈를 남겼습니다.'
+        'LIKE': '를 좋아합니다.',
+        'CLONE': '를 가져갔습니다.',
+        'REQUEST': '에 변경 요청을 남겼습니다.',
+        'ISSUE': '를 지적했습니다.'
     }
 
     const onClickAlarm = (values) => {
         console.log("values////////////////////")
         console.log(values);
 
-        Api.post("/alarms", {alarmId:values.key}).then(response => {
+        Api.post("/alarms", { alarmId: values.key }).then(response => {
             console.log(response);
             console.log(props);
         }).catch(error => {
@@ -35,35 +38,65 @@ function Alarm(props) {
     const AlarmList = (
         <Menu>
             {
-                alarms.map((alarm, idx) => {
-                    if(alarm.read === false){
+                alarms !== null && alarms.map((alarm, idx) => {
+                    if (alarm.read === false) {
                         alarmCount += 1;
-                        return (<Menu.Item key={alarm.id} title={alarm.spaceName} onClick={onClickAlarm}>
-                            <a href={`/${props.user.userId}/repositories/${alarm.spaceName}`}>{alarm.srcMemberName}님이 회원님의 지도{typemap[alarm.alarmType]}</a>
-                        </Menu.Item>)
+                        return (
+                            <Menu.Item key={alarm.id}
+                                icon={
+                                    <Image
+                                        width='1.5rem'
+                                        height='1.5rem'
+                                        alt="example"
+                                        src={alarm.thumbnail !== null ? Api.defaults.baseURL + '/files/' + alarm.thumbnail : "no-image.svg"}
+                                        style={{ borderRadius: "10%", marginTop: '5px' }}
+                                        preview={false}
+                                    />
+                                }
+                                title={alarm.spaceName}
+                                onClick={onClickAlarm}>
+                                    <a href={`/${props.user.userId}/repositories/${alarm.spaceName}`} style={{ marginLeft: '8px' }}>
+                                        <text style={{ fontWeight: "bold" }}>{alarm.srcMemberName}</text>
+                                    님이 회원님의 지도{typemap[alarm.alarmType]}
+                                    </a>
+                            </Menu.Item>
+                        )
                     }
                 })
             }
+                                {
+                                    alarmCount !== 0 &&
+                                    <Menu.Item style={{ color: '#999999' }}
+                                        onClick={() => {
+                                            Api.post(`/${props.user.userId}/alarms`)
+                                                .then(response => {
+                                                    dispatch(deleteAllAlarm())
+                                                })
+                                                .catch(err => err)
+                                        }}
+                                    >
+                                        알람 모두 읽음으로 표시
+                    </Menu.Item>
+                                }
         </Menu>
-    )
+                        )
 
+                        return (
 
-    return (
+                            <AlarmContainer>
+                                <Badge count={alarmCount} size="small" >
+                                    <Dropdown overlay={AlarmList} trigger={['click']} >
+                                        <BellOutlined style={{ fontSize: '1.5rem', marginTop: '0.1875rem' }} />
+                                    </Dropdown>
+                                </Badge>
+                            </AlarmContainer >
 
-        <AlarmContainer>
-            <Badge count={alarmCount} size="small" >
-                <Dropdown overlay={AlarmList} trigger={['click']} >
-                    <BellOutlined style={{ fontSize: '1.5rem', marginTop: '0.1875rem' }} />
-                </Dropdown>
-            </Badge>
-        </AlarmContainer >
+                        )
+                    }
 
-    )
-}
+                    export default withRouter(Alarm)
 
-export default withRouter(Alarm)
-
-const AlarmContainer = styled.div`
+                    const AlarmContainer = styled.div`
     border-radius: 1.1rem;
     background-color: white;
     width: 2.2rem;

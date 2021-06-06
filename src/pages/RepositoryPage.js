@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link, withRouter } from "react-router-dom";
 import styled from "styled-components";
 
 import { FileTextOutlined, EnvironmentOutlined, PullRequestOutlined, ExclamationCircleOutlined, UserOutlined, SettingOutlined } from '@ant-design/icons';
@@ -6,15 +7,49 @@ import { FileTextOutlined, EnvironmentOutlined, PullRequestOutlined, Exclamation
 import CommonLayout from "../components/Layout/CommonLayout";
 import MapContainer from "../components/Map/MapContainer";
 
-import { Breadcrumb, Tabs, Avatar, Table, Tag, Row, Col, Divider, Result, Button, Spin, Statistic, Image } from 'antd';
+import {
+    Breadcrumb,
+    Tabs,
+    Avatar,
+    Table,
+    Tag,
+    Row,
+    Col,
+    Divider,
+    Result,
+    Button,
+    Spin,
+    Statistic,
+    Image,
+    Pagination,
+    Alert
+} from 'antd';
 import { LikeOutlined, LikeTwoTone, DislikeOutlined, DislikeTwoTone } from '@ant-design/icons';
 import Api from "../util/Api";
 
-import { useDispatch } from 'react-redux'
-import { loadMapData } from '../_actions/map_action'
+import InfoSetting from "../components/Repository/InfoSetting";
+import { useDispatch } from "react-redux";
 
+import { compareRepository, selectIssueList, selectRequestList } from "../_actions/repository_action";
 
 const { TabPane } = Tabs
+
+let hrefId = "";
+let hrefRepo = "";
+
+function getDate(isoDate) {
+    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    const createdDate = isoDate.split(/-|T/);
+    const year = createdDate[0];
+    const month = parseInt(createdDate[1]).toString();
+    const date = parseInt(createdDate[2]).toString();
+    const time = createdDate[3].split(':');
+    const hour = time[0];
+    const min = time[1];
+
+    return `${year}년 ${month}월 ${date}일  ${hour}:${min}`;
+}
 
 const columns = [
     {
@@ -22,7 +57,17 @@ const columns = [
         dataIndex: 'title',
         key: 'title',
         // eslint-disable-next-line jsx-a11y/anchor-is-valid
-        render: title => <a>{title}</a>,
+        render: (title, values) => {
+            if (values.type === "issue") {
+                console.log("VALUES", values)
+                return (<Link to={`/${hrefId}/repositories/${hrefRepo}/issues/${values.key}`}>{title}</Link>)
+            } else {
+                return (<Link to={{
+                    pathname: `/${hrefId}/repositories/${hrefRepo}/requests/${values.key}`,
+                    state: { userId: hrefId, repositoryName: hrefRepo }
+                }}>{title}</Link>)
+            }
+        },
     },
     {
         title: 'User',
@@ -35,27 +80,27 @@ const columns = [
         dataIndex: 'tags',
         render: tags => (
             <span>
-                {tags.map(tag => {
+                {tags?.map(tag => {
                     let color;
 
-                    if (tag === 'question') {
+                    if (tag === 'QUESTION') {
                         color = 'geekblue'
-                    } else if (tag === 'issue') {
+                    } else if (tag === 'ISSUE') {
                         color = 'volcano'
-                    } else if (tag === 'ok') {
+                    } else if (tag === 'OK') {
                         color = 'green'
-                    } else if (tag === 'denied') {
+                    } else if (tag === 'DENIED') {
                         color = 'red'
-                    } else if (tag === 'request') {
+                    } else if (tag === 'REQUEST') {
                         color = 'processing'
-                    } else if (tag === 'merge') {
+                    } else if (tag === 'MERGE') {
                         color = 'gold'
-                    } else if (tag === 'duplicate') {
+                    } else if (tag === 'DUPLICATE') {
                         color = 'default'
                     }
                     return (
                         <Tag color={color} key={tag}>
-                            {tag.toUpperCase()}
+                            {tag?.toUpperCase()}
                         </Tag>
                     );
                 })}
@@ -70,97 +115,11 @@ const columns = [
     }
 ];
 
-const issueWaitingData = [
-    {
-        key: '1',
-        title: '코로나때문에 통행이 막힌 포탈은 반영이되어있나요?',
-        user: 'doili0552',
-        tags: ['question'],
-        date: '2021-04-11 12:43:52',
-    },
-    {
-        key: '2',
-        title: '제2 공학관 6층 피씨실 막혔습니다..',
-        user: '88dydfuf',
-        tags: ['issue'],
-        date: '2021-04-10 09:33:27',
-    },
-    {
-        key: '3',
-        title: '학교 310관 막혔어요!',
-        user: 'ghdtjq2038',
-        tags: ['issue'],
-        date: '2021-04-9 11:10:20',
-    },
-];
-
-const issueCheckedData = [
-    {
-        key: '1',
-        title: '학식 위치 추가해주세요!',
-        user: 'doili0552',
-        tags: ['ok'],
-        date: '2021-04-11 12:43:52',
-    },
-    {
-        key: '2',
-        title: '123455관 추가해주실 수 있나요?',
-        user: '88dydfuf',
-        tags: ['denied'],
-        date: '2021-04-10 09:33:27',
-    }
-];
-
-const requestWaitingData = [
-    {
-        key: '1',
-        title: '학교 경치 좋은 곳 추가',
-        user: 'doili0552',
-        tags: ['request'],
-        date: '2021-04-11 12:43:52',
-    },
-    {
-        key: '2',
-        title: '학교 화장실 위치 추가',
-        user: '88dydfuf',
-        tags: ['request'],
-        date: '2021-04-10 09:33:27',
-    }
-];
-
-const requestAcceptedData = [
-    {
-        key: '1',
-        title: '학교 편의점 위치 추가',
-        user: '88dydfuf',
-        tags: ['ok', 'merge'],
-        date: '2021-04-10 09:33:27',
-    },
-    {
-        key: '2',
-        title: '학교 커피숍 위치 추가',
-        user: 'ghdtjq2038',
-        tags: ['ok', 'merge'],
-        date: '2021-04-9 11:10:20',
-    },
-];
-
-const requestDeniedData = [
-    {
-        key: '1',
-        title: '학교 운동장 위치 추가',
-        user: 'doili0552',
-        tags: ['denied', 'duplicate'],
-        date: '2021-04-11 12:43:52',
-    },
-    {
-        key: '2',
-        title: '맛집 추가',
-        user: 'ghdtjq2038',
-        tags: ['denied'],
-        date: '2021-04-11 12:43:52',
-    },
-];
+let totalWaitingIssueCount = 0;
+let totalCheckedIssueCount = 0;
+let totalWaitingRequestCount = 0;
+let totalAcceptedRequestCount = 0;
+let totalDeniedRequestCount = 0;
 
 const Description = styled.div`
     margin : 20px 100px 20px 100px;
@@ -170,52 +129,241 @@ const Info = styled.div`
     
 `;
 
+let visitCount = 0
+
 const RepositoryPage = (props) => {
+    const dispatch = useDispatch()
 
     const [repositoryInfo, setRepositoryInfo] = useState({});
     const [thumbnail, setThumbnail] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [actionType, setActionType] = useState(null);
+    const [isFirst, setIsFirst] = useState(true);
     const { userId, repositoryName } = props.match.params;
     const userUrl = `/${userId}`;
+
+    const [issueWaitingPage, setIssueWaitingPage] = useState(1);
+    const [issueCheckedPage, setIssueCheckedPage] = useState(1);
+    const [issueWaitingData, setIssueWaitingData] = useState([]);
+    const [issueCheckedData, setIssueCheckedData] = useState([]);
+
+    const [requestLoading, setRequestLoading] = useState(false);
+    const [requestWaitingPage, setRequestWaitingPage] = useState(1);
+    const [requestAcceptedPage, setRequestAcceptedPage] = useState(1);
+    const [requestDeniedPage, setRequestDeniedPage] = useState(1);
+    const [requestWaitingData, setRequestWaitingData] = useState([]);
+    const [requestAcceptedData, setRequestAcceptedData] = useState([]);
+    const [requestDeniedData, setRequestDeniedData] = useState([]);
 
     const backHome = () => {
         props.history.push('/main')
     }
 
-    //const dispatch = useDispatch()
-
     useEffect(() => {
-
+        // 새로 고침 가능!!
+        if (isFirst && visitCount !== 0) {
+            visitCount++
+            setIsFirst(false)
+            Api.post(`/${userId}/${repositoryName}/visit`)
+                .then(response => response)
+                .catch(e => e)
+        }
+        visitCount++
         async function getRepositoryInfo() {
+            hrefId = userId;
+            hrefRepo = repositoryName;
+
+            setIsLoading(true);
             await Api.get(`/${userId}/repositories/${repositoryName}`).then(response => {
                 setRepositoryInfo(response.data);
 
-                console.log(response.data);
-
                 if (response.data.thumbnail !== null) {
                     setThumbnail(Api.defaults.baseURL + '/files/' + response.data.thumbnail);
-                }else{
+                } else {
                     setThumbnail(Api.defaults.baseURL + '/files/no-image.svg');
                 }
 
-                setIsLoading(false);
             }).catch(error => {
                 setNotFound(true);
-            })
+            });
+
+            dispatch(selectIssueList(0, userId, repositoryName, 'WAITING'))
+                .then(response => {
+
+                    let issueList = response.payload?.data;
+                    totalWaitingIssueCount = issueList?.totalElements;
+
+                    let contents = issueList.content;
+
+                    let result = []
+
+                    for (let i = 0; i < contents.length; i++) {
+                        let jsonObj = {};
+
+                        jsonObj.key = contents[i].id;
+                        jsonObj.title = contents[i].title;
+                        jsonObj.user = contents[i].createdBy;
+                        jsonObj.tags = [contents[i].tag];
+                        jsonObj.date = getDate(contents[i].createdDate);
+                        jsonObj.type = "issue";
+
+                        result.push(jsonObj);
+                    }
+
+                    setIssueWaitingData(result);
+                })
+                .catch(error => {
+                    setNotFound(true);
+                })
+
+            dispatch(selectIssueList(0, userId, repositoryName, 'CHECKED'))
+                .then(response => {
+
+                    let issueList = response.payload.data;
+                    totalCheckedIssueCount = issueList.totalElements;
+
+                    let contents = issueList.content;
+
+                    let result = []
+
+                    for (let i = 0; i < contents.length; i++) {
+                        let jsonObj = {};
+
+                        jsonObj.key = contents[i].id;
+                        jsonObj.title = contents[i].title;
+                        jsonObj.user = contents[i].createdBy;
+                        jsonObj.tags = [contents[i].tag];
+                        jsonObj.date = getDate(contents[i].createdDate);
+                        jsonObj.type = "issue";
+
+                        result.push(jsonObj);
+                    }
+
+                    setIssueCheckedData(result);
+
+                    setIsLoading(false);
+                })
+                .catch(error => {
+                    setNotFound(true);
+                });
+
+            dispatch(selectRequestList(0, userId, repositoryName, 'WAITING'))
+                .then(response => {
+
+                    let issueList = response.payload.data;
+                    totalWaitingRequestCount = issueList.totalElements;
+
+                    let contents = issueList.content;
+
+                    let result = []
+
+                    for (let i = 0; i < contents.length; i++) {
+                        let jsonObj = {};
+
+                        jsonObj.key = contents[i].id;
+                        jsonObj.title = contents[i].title;
+                        jsonObj.user = contents[i].createdBy;
+                        jsonObj.tags = [contents[i].tag];
+                        jsonObj.date = getDate(contents[i].createdDate);
+                        jsonObj.type = "request";
+
+                        result.push(jsonObj);
+                    }
+
+                    setRequestWaitingData(result);
+
+                    setIsLoading(false);
+                })
+                .catch(error => {
+                    setNotFound(true);
+                });
+
+            dispatch(selectRequestList(0, userId, repositoryName, 'ACCEPTED'))
+                .then(response => {
+
+                    let requestList = response.payload.data;
+                    totalAcceptedRequestCount = requestList.totalElements;
+
+                    let contents = requestList.content;
+
+                    let result = []
+
+                    for (let i = 0; i < contents.length; i++) {
+                        let jsonObj = {};
+
+                        jsonObj.key = contents[i].id;
+                        jsonObj.title = contents[i].title;
+                        jsonObj.user = contents[i].createdBy;
+                        jsonObj.tags = [contents[i].tag];
+                        jsonObj.date = getDate(contents[i].createdDate);
+                        jsonObj.type = "request";
+
+                        result.push(jsonObj);
+                    }
+
+                    setRequestAcceptedData(result);
+
+                    setIsLoading(false);
+                })
+                .catch(error => {
+                    setNotFound(true);
+                });
+
+            dispatch(selectRequestList(0, userId, repositoryName, 'DENIED'))
+                .then(response => {
+
+                    let requestList = response.payload.data;
+                    totalDeniedRequestCount = requestList.totalElements;
+
+                    let contents = requestList.content;
+
+                    let result = []
+
+                    for (let i = 0; i < contents.length; i++) {
+                        let jsonObj = {};
+
+                        jsonObj.key = contents[i].id;
+                        jsonObj.title = contents[i].title;
+                        jsonObj.user = contents[i].createdBy;
+                        jsonObj.tags = [contents[i].tag];
+                        jsonObj.date = getDate(contents[i].createdDate);
+                        jsonObj.type = "request";
+
+                        result.push(jsonObj);
+                    }
+
+                    setRequestDeniedData(result);
+
+                    setIsLoading(false);
+                })
+                .catch(error => {
+                    setNotFound(true);
+                });
+
+            dispatch(compareRepository(userId, repositoryName))
+                .then(response => {
+                    if (response.payload.status === 200) {
+                        if (response.payload.data.message === undefined) {
+                            setRequestLoading(true);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                })
         }
 
         getRepositoryInfo().then();
-    }, [props,actionType])
+    }, [props, actionType])
 
     const onClickClone = () => {
-        if(repositoryInfo.source === "HOST" && repositoryInfo.authority === "OWNER"){
+        if (repositoryInfo.source === "HOST" && repositoryInfo.authority === "OWNER") {
             alert("본인의 지도는 클론할 수 없습니다.");
-        }else{
+        } else {
             // eslint-disable-next-line no-restricted-globals
-            if(confirm("지도를 클론하시겠습니까?")){
-                Api.post('/repositories/clone', {"repositoryId":repositoryInfo.id}).then(response => {
+            if (confirm("지도를 클론하시겠습니까?")) {
+                Api.post('/repositories/clone', { "repositoryId": repositoryInfo.id }).then(response => {
                     alert("클론이 완료되었습니다. 클론된 지도로 이동합니다.");
                     props.history.push(`/${props.user.userData.data.userId}/repositories/${response.data.name}`);
                 }).catch(error => {
@@ -227,17 +375,163 @@ const RepositoryPage = (props) => {
     }
 
     const onClickLike = (type) => {
-        Api.post(`/${repositoryInfo.id}/like`, {"type":type}).then(response => {
-            if(actionType === type){
+        Api.post(`/${repositoryInfo.id}/like`, { "type": type }).then(response => {
+            if (actionType === type) {
                 setActionType(null);
-            }else{
+            } else {
                 setActionType(type)
             }
 
-        }).catch(error=>{
+        }).catch(error => {
             console.log(error);
         })
     }
+
+    const onChangeWaitingPage = (page) => {
+        dispatch(selectIssueList(page - 1, userId, repositoryName, 'WAITING'))
+            .then(response => {
+
+                let issueList = response.payload.data;
+
+                let contents = issueList.content;
+
+                let result = []
+
+                for (let i = 0; i < contents.length; i++) {
+                    let jsonObj = {};
+
+                    jsonObj.key = contents[i].id;
+                    jsonObj.title = contents[i].title;
+                    jsonObj.user = contents[i].createdBy;
+                    jsonObj.tags = [contents[i].tag];
+                    jsonObj.date = contents[i].createdDate;
+                    jsonObj.type = "issue";
+
+                    result.push(jsonObj);
+                }
+
+                setIssueWaitingData(result);
+            });
+
+        setIssueWaitingPage(page);
+    }
+
+    const onChangeCheckedPage = (page) => {
+        dispatch(selectIssueList(page - 1, userId, repositoryName, 'CHECKED'))
+            .then(response => {
+
+                let issueList = response.payload.data;
+
+                let contents = issueList.content;
+
+                let result = []
+
+                for (let i = 0; i < contents.length; i++) {
+                    let jsonObj = {};
+
+                    jsonObj.key = contents[i].id;
+                    jsonObj.title = contents[i].title;
+                    jsonObj.user = contents[i].createdBy;
+                    jsonObj.tags = [contents[i].tag];
+                    jsonObj.date = contents[i].createdDate;
+                    jsonObj.type = "issue";
+
+                    result.push(jsonObj);
+                }
+
+                setIssueWaitingData(result);
+            });
+
+        setIssueCheckedPage(page);
+    }
+
+    const onChangeRequestWaitingPage = (page) => {
+        dispatch(selectRequestList(page - 1, userId, repositoryName, 'WAITING'))
+            .then(response => {
+
+                let requestList = response.payload.data;
+
+                let contents = requestList.content;
+
+                let result = []
+
+                for (let i = 0; i < contents.length; i++) {
+                    let jsonObj = {};
+
+                    jsonObj.key = contents[i].id;
+                    jsonObj.title = contents[i].title;
+                    jsonObj.user = contents[i].createdBy;
+                    jsonObj.tags = [contents[i].tag];
+                    jsonObj.date = contents[i].createdDate;
+                    jsonObj.type = "request";
+
+                    result.push(jsonObj);
+                }
+
+                setRequestWaitingData(result);
+            });
+
+        setRequestWaitingPage(page);
+    }
+
+    const onChangeRequestAcceptedPage = (page) => {
+        dispatch(selectRequestList(page - 1, userId, repositoryName, 'ACCEPTED'))
+            .then(response => {
+
+                let requestList = response.payload.data;
+
+                let contents = requestList.content;
+
+                let result = []
+
+                for (let i = 0; i < contents.length; i++) {
+                    let jsonObj = {};
+
+                    jsonObj.key = contents[i].id;
+                    jsonObj.title = contents[i].title;
+                    jsonObj.user = contents[i].createdBy;
+                    jsonObj.tags = [contents[i].tag];
+                    jsonObj.date = contents[i].createdDate;
+                    jsonObj.type = "request";
+
+                    result.push(jsonObj);
+                }
+
+                setRequestAcceptedData(result);
+            });
+
+        setRequestAcceptedPage(page);
+    }
+
+    const onChangeRequestDeniedPage = (page) => {
+        dispatch(selectRequestList(page - 1, userId, repositoryName, 'DENIED'))
+            .then(response => {
+
+                let requestList = response.payload.data;
+
+                let contents = requestList.content;
+
+                let result = []
+
+                for (let i = 0; i < contents.length; i++) {
+                    let jsonObj = {};
+
+                    jsonObj.key = contents[i].id;
+                    jsonObj.title = contents[i].title;
+                    jsonObj.user = contents[i].createdBy;
+                    jsonObj.tags = [contents[i].tag];
+                    jsonObj.date = contents[i].createdDate;
+                    jsonObj.type = "request";
+
+                    result.push(jsonObj);
+                }
+
+                setRequestDeniedData(result);
+            });
+
+        setRequestDeniedPage(page);
+    }
+    const colorArray = ["magenta", "red", "volcano", "orange", "lime", "green", "cyan", "blue", "geekblue", "purple"]
 
     if (!isLoading) {
         return (
@@ -249,119 +543,151 @@ const RepositoryPage = (props) => {
                     <Breadcrumb.Item>
                         {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
                         <a href="">{repositoryName}</a>
-                        {repositoryInfo.source === "CLONE" && <div style={{ fontSize: "15px" }}>cloned from <a style={{ color: "blue" }} href={'/' + repositoryInfo.hostUserId + '/repositories/' + repositoryInfo.name}>{'/' + repositoryInfo.hostUserId + '/repositories/' + repositoryInfo.name}</a></div>}
+                        {repositoryInfo.source === "CLONE" && <div style={{ fontSize: "15px" }}>원본 지도 : <a style={{ color: "blue" }} href={'/' + repositoryInfo.hostUserId + '/repositories/' + repositoryInfo.hostRepoName}>{`/${repositoryInfo.hostUserId}/repositories/${repositoryInfo.hostRepoName}`}</a></div>}
                     </Breadcrumb.Item>
                 </Breadcrumb>
                 <Tabs defaultActiveKey="1" size="large" style={{ padding: '0px 30px 10px 30px' }}>
-                    <TabPane tab={<span><FileTextOutlined />Description</span>} key="1">
+                    <TabPane tab={<span><FileTextOutlined />지도 소개</span>} key="1">
                         <Description>
                             <Row>
                                 <Col flex="auto" style={{ width: '200px' }}>
                                     <Row>
-                                        <h1 style={{ marginBottom: '50px', fontSize: '2rem', fontWeight: '2rem', marginLeft: 'auto', marginRight: 'auto', marginTop: '50px' }}> Information </h1>
+                                        <h1 style={{ width: '200px', marginBottom: '50px', fontSize: '2rem', fontWeight: '2rem', marginLeft: 'auto', marginRight: 'auto', marginTop: '50px' }}> 상세설명 </h1>
                                         <h2 style={{ fontSize: '1.1rem', lineHeight: '2rem' }}>{repositoryInfo.description}</h2>
                                     </Row>
                                 </Col>
                                 <Col flex="auto" style={{ marginLeft: '50px', marginRight: '50px' }}>
                                     <Row style={{ alignContent: "center", justifyContent: "center" }}>
                                         {thumbnail !== "" && <Image preview={false} src={thumbnail} alt="Thumbnail" style={{ width: '50vw', height: '50vh' }}
-                                                                    fallback="/no-image.svg"
+                                            fallback="/no-image.svg"
                                         />}
                                     </Row>
                                 </Col>
                                 <Col flex="auto">
                                     <Info>
-                                        {repositoryInfo.source === "HOST" && <Button type="primary" size="large" style={{ width: "100%" }} onClick={onClickClone}>Clone</Button>}
+                                        {repositoryInfo.source === "HOST" && <Button type="primary" size="large" style={{ width: "100%" }} onClick={onClickClone}>내 지도로 가져오기</Button>}
                                         <Divider />
                                         <Row gutter={16}>
                                             <Col span={12}>
-                                                <Statistic title="좋아요" value={repositoryInfo.likeCount} prefix={repositoryInfo.likeType == "LIKE" ? <LikeTwoTone onClick={()=>{onClickLike("LIKE")}}></LikeTwoTone> : <LikeOutlined onClick={()=>{onClickLike("LIKE")}}/>} />
+                                                <Statistic title="좋아요" value={repositoryInfo.likeCount} prefix={repositoryInfo.likeType === "LIKE" ? <LikeTwoTone onClick={() => { onClickLike("LIKE") }} /> : <LikeOutlined onClick={() => { onClickLike("LIKE") }} />} />
                                             </Col>
                                             <Col span={12}>
-                                                <Statistic title="싫어요" value={repositoryInfo.dislikeCount} prefix={repositoryInfo.likeType == "DISLIKE" ? <DislikeTwoTone onClick={()=>{onClickLike("DISLIKE")}}></DislikeTwoTone> : <DislikeOutlined onClick={()=>{onClickLike("DISLIKE")}}/>} />
+                                                <Statistic title="싫어요" value={repositoryInfo.dislikeCount} prefix={repositoryInfo.likeType === "DISLIKE" ? <DislikeTwoTone onClick={() => { onClickLike("DISLIKE") }} /> : <DislikeOutlined onClick={() => { onClickLike("DISLIKE") }} />} />
                                             </Col>
                                         </Row>
                                         <Divider>카테고리</Divider>
-                                        {
-                                            repositoryInfo.categories.map((category, idx)=>{
-                                                return (
-                                                    <Tag color='geekblue'>{category}</Tag>
-                                                )
-                                            })
-                                        }
+                                        <div style={{ overflow: 'hidden', width: '200px'}}>
+                                            {
+                                                repositoryInfo.categories.map((category, idx) => {
+                                                    return (
+                                                        <Tag style={{marginBottom: '5px'}} color={colorArray[idx%colorArray.length]} key={idx}>{category}</Tag>
+                                                    )
+                                                })
+                                            }
+                                        </div>
                                         <Divider>Owner의 한마디</Divider>
                                         <p>
-                                            우리 함께 중앙대학교 지도를 만들어봐요!
+                                            {repositoryInfo.oneWord}
                                         </p>
                                         <Divider>Owner</Divider>
                                         <div>
-                                            <h3 style={{ textAlign: "left" }}>
-                                                <Avatar style={{ backgroundColor: '#87d068' }} icon={<UserOutlined />} />
-                                                &nbsp;ghdtjq2038
-                                            </h3>
-                                            <h3 style={{ textAlign: "left" }}>
-                                                <Avatar style={{ backgroundColor: 'blue' }} icon={<UserOutlined />} />
-                                                &nbsp;doili0552
-                                            </h3>
-                                            <h3 style={{ textAlign: "left" }}>
-                                                <Avatar style={{ backgroundColor: 'orange' }} icon={<UserOutlined />} />
-                                                &nbsp;88dydfuf
-                                            </h3>
+                                            {
+                                                repositoryInfo.owners.map((ownerId, idx) => {
+                                                    return (
+                                                        <h3 style={{ textAlign: "left" }} key={idx}>
+                                                            <Avatar style={{ backgroundColor: '#87d068' }} icon={<UserOutlined />} />
+                                                            &nbsp;{ownerId}
+
+                                                        </h3>
+                                                    )
+                                                })
+                                            }
                                         </div>
                                     </Info>
                                 </Col>
                             </Row>
                         </Description>
                     </TabPane>
-                    <TabPane tab={<span><EnvironmentOutlined />Map</span>} key="2">
-                        <MapContainer mapId={repositoryInfo.map_id} authority={repositoryInfo.authority}/>
+                    <TabPane tab={<span><EnvironmentOutlined />지도</span>} key="2">
+                        <MapContainer mapId={repositoryInfo.map_id} authority={repositoryInfo.authority} key="mapContainer" />
                     </TabPane>
-                    <TabPane tab={<span style={repositoryInfo.source === "HOST" ? null : { display: "none" }}><ExclamationCircleOutlined />Issues</span>} key="3">
+                    {repositoryInfo.source === "HOST" && <TabPane tab={<span><ExclamationCircleOutlined />지적하기</span>} key="3">
+                        <Alert
+                            message="새로운 이슈를 올려주세요!"
+                            type="warning"
+                            action={
+                                <Link to={`/${userId}/repositories/${repositoryName}/issues`}>
+                                    <Button size="middle" type="primary">지적하기</Button>
+                                </Link>
+                            }
+                            style={{ marginBottom: '10px', borderRadius: '15px', fontSize: '15px' }}
+                        />
                         <Tabs defaultActiveKey="1" size="large" style={{ padding: '0px 30px 10px 30px', borderStyle: 'solid', borderWidth: 'thin', borderRadius: '20px' }}>
-                            <TabPane tab={<span>3 Waiting</span>} key="1">
+                            <TabPane tab={<span>{totalWaitingIssueCount} Waiting</span>} key="1">
                                 <Table
                                     columns={columns}
-                                    pagination={{ position: ['bottomCenter'] }}
+                                    pagination={false}
                                     dataSource={issueWaitingData}
                                 />
+                                <Pagination style={{ marginLeft: '45%', marginTop: '20px' }} current={issueWaitingPage} pageSize={8} onChange={onChangeWaitingPage} total={totalWaitingIssueCount} />
                             </TabPane>
-                            <TabPane tab={<span>2 Checked</span>} key="2">
+                            <TabPane tab={<span>{totalCheckedIssueCount} Checked</span>} key="2">
                                 <Table
                                     columns={columns}
-                                    pagination={{ position: ['bottomCenter'] }}
+                                    pagination={false}
                                     dataSource={issueCheckedData}
                                 />
+                                <Pagination style={{ marginLeft: '45%', marginTop: '20px' }} current={issueCheckedPage} pageSize={8} onChange={onChangeCheckedPage} total={totalCheckedIssueCount} />
                             </TabPane>
                         </Tabs>
                     </TabPane>
-                    <TabPane tab={<span style={repositoryInfo.source === "HOST" ? null : { display: "none" }}><PullRequestOutlined />Pull requests</span>} key="4">
+                    }
+                    {repositoryInfo.source === "HOST" && <TabPane tab={<span><PullRequestOutlined />변경 요청</span>} key="4">
+                        {
+                            requestLoading && <Alert
+                                message="복사한 지도에 변경사항이 있습니다!"
+                                type="info"
+                                action={
+                                    <Link to={{ pathname: `/${userId}/repositories/${repositoryName}/requests`, state: { userId: userId, repositoryName: repositoryName } }}>
+                                        <Button size="middle" type="primary">요청하기</Button>
+                                    </Link>
+                                }
+                                style={{ marginBottom: '10px', borderRadius: '15px', fontSize: '15px' }}
+                            />
+                        }
                         <Tabs defaultActiveKey="1" size="large" style={{ padding: '0px 30px 10px 30px', borderStyle: 'solid', borderWidth: 'thin', borderRadius: '20px' }}>
-                            <TabPane tab={<span>2 Waiting</span>} key="1">
+                            <TabPane tab={<span>{totalWaitingRequestCount} Waiting</span>} key="1">
                                 <Table
                                     columns={columns}
-                                    pagination={{ position: ['bottomCenter'] }}
+                                    pagination={false}
                                     dataSource={requestWaitingData}
                                 />
+                                <Pagination style={{ marginLeft: '45%', marginTop: '20px' }} current={requestWaitingPage} pageSize={8} onChange={onChangeRequestWaitingPage} total={totalWaitingRequestCount} />
                             </TabPane>
-                            <TabPane tab={<span>2 Accepted</span>} key="2">
+                            <TabPane tab={<span>{totalAcceptedRequestCount} Accepted</span>} key="2">
                                 <Table
                                     columns={columns}
-                                    pagination={{ position: ['bottomCenter'] }}
+                                    pagination={false}
                                     dataSource={requestAcceptedData}
                                 />
+                                <Pagination style={{ marginLeft: '45%', marginTop: '20px' }} current={requestAcceptedPage} pageSize={8} onChange={onChangeRequestAcceptedPage} total={totalAcceptedRequestCount} />
                             </TabPane>
-                            <TabPane tab={<span>1 Denied</span>} key="3">
+                            <TabPane tab={<span>{totalDeniedRequestCount} Denied</span>} key="3">
                                 <Table
                                     columns={columns}
-                                    pagination={{ position: ['bottomCenter'] }}
+                                    pagination={false}
                                     dataSource={requestDeniedData}
                                 />
+                                <Pagination style={{ marginLeft: '45%', marginTop: '20px' }} current={requestDeniedPage} pageSize={8} onChange={onChangeRequestDeniedPage} total={totalDeniedRequestCount} />
                             </TabPane>
                         </Tabs>
                     </TabPane>
-                    <TabPane tab={<span style={repositoryInfo.source === "HOST" && repositoryInfo.authority === "OWNER" ? null : { display: "none" }}><SettingOutlined />Settings</span>} key="5">
-                        Settings
+                    }
+                    {repositoryInfo.authority === "OWNER" && <TabPane tab={<span><SettingOutlined />설정</span>} key="5">
+                        <InfoSetting repositoryInfo={repositoryInfo} thumbnailUrl={thumbnail} />
                     </TabPane>
+                    }
+
                 </Tabs>
             </CommonLayout>
         );
@@ -379,4 +705,4 @@ const RepositoryPage = (props) => {
     }
 };
 
-export default RepositoryPage;
+export default withRouter(RepositoryPage);

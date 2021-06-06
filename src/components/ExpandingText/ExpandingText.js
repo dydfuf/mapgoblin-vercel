@@ -1,14 +1,14 @@
 import React from 'react'
 import styled from 'styled-components'
 
-function ExpandingText({ text }) {
+function ExpandingText({ text, count }) {
     return (
         <ExpandedText>
-            <a href="/" style={{ display: 'table-cell', paddingTop: '10px', color: 'black' }}>
+            <div href="/" style={{ display: 'table-cell', paddingTop: '10px', color: 'black' }}>
                 {text}
-            </a>
+            </div>
             <div className="arrow">
-                모두보기
+                총 {count}개
             </div>
         </ExpandedText>
 
@@ -18,11 +18,11 @@ function ExpandingText({ text }) {
 
 export default ExpandingText
 
-const ExpandedText = styled.a`
+const ExpandedText = styled.div`
     display: inline-block;
     overflow: hidden;
     white-space: nowrap;
-    font-size: 1.8vw;
+    font-size: 2.2vw;
     vertical-align: bottom;
     .arrow{
         padding-left: 0.5vw;

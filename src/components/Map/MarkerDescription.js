@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Tabs, Rate, Divider, Comment, Input, Form, Button, List, Image } from 'antd';
 import { InfoCircleOutlined, CommentOutlined, HeartFilled } from '@ant-design/icons'
 import { connect } from 'react-redux'
@@ -7,7 +7,6 @@ import Api from '../../util/Api';
 const { TabPane } = Tabs;
 
 const { TextArea } = Input;
-
 
 const Editor = ({ onChange, onSubmit, submitting, value }) => (
     <>
@@ -37,17 +36,58 @@ const CommentList = ({ comments }) => (
     />
 );
 
-const MarkerDescription = ({ title, description, rating, userName, thumbnail }) => {
+const MarkerDescription = ({ title, description, rating, userName, thumbnail, mapId, latLng, layer }) => {
 
     const [reviewInput, setreviewInput] = useState("")
-    const [value, setValue] = useState(null)
+    const [value, setValue] = useState(0)
     const [reviewList, setreviewList] = useState([])
     const [submitting, setsubmitting] = useState(false)
 
-    const handleReviewSubmit = () => {
+    useEffect(() => {
+        let dataToSubmit = {
+            "mapId": mapId,
+            "layerName": layer,
+            "geometry": latLng
+        }
+        Api.post(`/review/mapData`, dataToSubmit)
+            .then(response => {
+                let temp = []
+                response?.data.data.reverse().map((review, idx) => (
+                    temp.push(
+                        {
+                            author: <span style={{ display: 'flex' }}><p>{review.author}</p> <Rate style={{ marginLeft: '16px', fontSize: '14px' }} disabled allowHalf value={review.rating} /></span>,
+                            content: <p>{review.content}</p>
+                        }
+                    )
+                ))
+                setreviewList(temp)
+            })
+            .catch(e => {
+                console.log(e)
+            })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [latLng])
+
+    const handleReviewSubmit = async () => {
         if (!reviewInput) {
             return
         }
+
+        let dataToSubmit = {
+            "mapId": mapId,
+            "layerName": layer,
+            "geometry": latLng,
+            "author": userName,
+            "content": reviewInput,
+            "rating": value
+        }
+        await Api.post(`/review`, dataToSubmit)
+            .then(response => {
+            })
+            .catch(e => {
+                console.log(e)
+            })
+
         setsubmitting(true)
         setTimeout(() => {
             setsubmitting(false)
@@ -71,16 +111,20 @@ const MarkerDescription = ({ title, description, rating, userName, thumbnail }) 
                 tabBarGutter={100}>
                 <TabPane tab={<span><InfoCircleOutlined /> Information </span>} key="1">
                     <div>
-                        <h2> {title} </h2>
+                        <h1> {title} </h1>
                         <Rate disabled allowHalf={true} value={rating} style={{ marginBottom: '25px' }} />
-                        <Image preview={false} style={{width: '400px', marginLeft: '30px'}}src={Api.defaults.baseURL + '/files/' + thumbnail} alt="cau" fallback="../../no-image.svg"/>
+                        {thumbnail.substr(0, 4) === "http" ?
+                            <Image preview={false} style={{ width: '400px', marginLeft: '30px' }} src={thumbnail} alt="staticImage" />
+                            :
+                            <Image preview={false} style={{ width: '400px', marginLeft: '30px' }} src={Api.defaults.baseURL + '/files/' + thumbnail} alt="cau" fallback="../../no-image.svg" />
+                        }
                         <h3 style={{ marginTop: '25px' }}> {description} </h3>
                     </div>
                 </TabPane>
                 <TabPane tab={<span><CommentOutlined /> Review </span>} key="2">
                     <div>
                         <h2> {title} </h2>
-                        <Rate character={<HeartFilled />} allowHalf allowClear={false} defaultValue={2} style={{ fontSize: '40px', marginBottom: '25px' }} onChange={handleRatingChange} />
+                        <Rate character={<HeartFilled />} allowHalf allowClear={false} value={value} style={{ fontSize: '40px', marginBottom: '25px' }} onChange={handleRatingChange} />
                         <Divider style={{ marginTop: '0px' }}> Review </Divider>
 
                         <Comment
