@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Button, Result, Select, Spin, Tag} from "antd";
+import {Select, Spin, Tag} from "antd";
 import {useDispatch} from "react-redux";
 import {addSelectedCategory, selectCategoryList} from "../../_actions/repository_action";
 
@@ -10,8 +10,6 @@ const SelectCategory = (props) => {
     const [options, setOptions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    //const options = [{ value: '대학교' }, { value: '맛집' }, { value: '정보전달' }, { value: '서울' }];
-
     useEffect(()=>{
         dispatch(selectCategoryList(`/categories`))
             .then(response => {
@@ -21,6 +19,10 @@ const SelectCategory = (props) => {
             .catch(error => {
                 console.log(error);
             })
+
+        if(props.categories !== undefined){
+            dispatch(addSelectedCategory(props.categories));
+        }
     }, [])
 
     const tagRender = (props) => {

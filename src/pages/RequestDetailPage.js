@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import CommonLayout from "../components/Layout/CommonLayout";
 import { Button, Col, Divider, Form, Input, Result, Row, Spin, Timeline, Comment, List, Alert } from "antd";
 import RequestForm from "../components/Repository/RequestForm";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { deniedRequestData, mergeRequestData, saveRequestReply, selectRequestInfo } from "../_actions/repository_action";
-import { Link, withRouter } from "react-router-dom";
+import { withRouter } from "react-router-dom";
 import Api from "../util/Api";
 import SimpleMap from '../components/Map/SimpleMap';
 
@@ -28,8 +28,17 @@ const CommentList = ({ comments }) => (
         dataSource={comments}
         header={`${comments.length} ${comments.length > 1 ? 'replies' : 'reply'}`}
         itemLayout="horizontal"
-        style={{ textAlign: "left", width: "70%", marginLeft: "15%" }}
-        renderItem={props => <Comment {...props} />}
+        style={{textAlign: "left", width: "70%", marginLeft: "15%"}}
+        renderItem={item => (
+            <li>
+                <Comment
+                    author={item.name}
+                    avatar={item.profile ? `${Api.defaults.baseURL}/files/${item.profile}` : `${Api.defaults.baseURL}/files/NoProfile.png`}
+                    content={item.content}
+                    datetime={alarmCalculate(item.datetime)}
+                />
+            </li>
+        )}
     />
 );
 
@@ -42,13 +51,44 @@ const Editor = ({ onChange, onSubmit, value }) => (
                 </Col>
                 <Col>
                     <Button htmlType="submit" onClick={onSubmit} style={{ height: "100%" }} type="primary">
-                        Add Comment
+                        댓글 달기
                     </Button>
                 </Col>
             </Row>
         </Form.Item>
     </>
 );
+
+function alarmCalculate(date) {
+    const cur_date = new Date();
+    const time_val = cur_date.getTime() - Date.parse(date)
+    const min = 60000
+    const hour = 3600000
+    const day = 86400000
+    const week = day * 7
+    const month = day * 30
+    const year = day * 365
+
+    if (time_val < min) return '방금 전'
+    else if (time_val < hour) return Math.round(time_val / min) + '분 전'
+    else if (time_val < day) return Math.round(time_val / hour) + '시간 전'
+    else if (time_val < week) return Math.round(time_val / day) + '일 전'
+    else if (time_val < month) return Math.round(time_val / week) + '주 전'
+    else if (time_val < year) return Math.round(time_val / month) + '개월 전'
+    else return Math.round(time_val / year) + '년 전'
+}
+
+function getDate(isoDate) {
+    const createdDate = isoDate.split(/-|T/);
+    const year = createdDate[0];
+    const month = parseInt(createdDate[1]).toString();
+    const date = parseInt(createdDate[2]).toString();
+    const time = createdDate[3].split(':');
+    const hour = time[0];
+    const min = time[1];
+
+    return `${year}년 ${month}월 ${date}일  ${hour}:${min}`;
+}
 
 const RequestDetailPage = (props) => {
 
@@ -86,6 +126,8 @@ const RequestDetailPage = (props) => {
                     console.log(error);
                 })
         }
+
+        setCommentValue("");
     }
 
     const handleChange = (event) => {
@@ -116,19 +158,19 @@ const RequestDetailPage = (props) => {
                 console.log({ compareResult })
                 setdataToSimpleMap(compareResult)
                 if (compareResult.added !== undefined) {
-                    setAddList(compareResult.added.map((data) => <p>{data.createdDate} {data.name}</p>));
+                    setAddList(compareResult.added.map((data) => <p>{getDate(data.createdDate)} {data.name}</p>));
                 }
 
                 if (compareResult.modified !== undefined) {
-                    setModifyList(compareResult.modified.map((data) => <p>{data.createdDate} {data.name}</p>));
+                    setModifyList(compareResult.modified.map((data) => <p>{getDate(data.createdDate)} {data.name}</p>));
                 }
 
                 if (compareResult.delete !== undefined) {
-                    setDeleteList(compareResult.delete.map((data) => <p>{data.createdDate} {data.name}</p>));
+                    setDeleteList(compareResult.delete.map((data) => <p>{getDate(data.createdDate)} {data.name}</p>));
                 }
 
                 if (compareResult.layer !== undefined) {
-                    setLayerList(compareResult.layer.map((data) => <p>{data.createdDate} {data.name}</p>));
+                    setLayerList(compareResult.layer.map((data) => <p>{getDate(data.createdDate)} {data.name}</p>));
                 }
 
                 if (compareResult.replies !== undefined) {
@@ -143,6 +185,10 @@ const RequestDetailPage = (props) => {
             })
 
     }, []);
+
+    const onClickBack = () => {
+        props.history.push(`/${props.match.params.userId}/repositories/${props.match.params.repositoryName}`)
+    }
 
     const onClickMerge = () => {
         dispatch(mergeRequestData(`${props.location.pathname}/merge`))
@@ -220,7 +266,7 @@ const RequestDetailPage = (props) => {
                                             </Timeline.Item>
                                         }
                                         {
-                                            modifyList.length > 0 && <Timeline.Item>
+                                            modifyList.length > 0 && <Timeline.Item color="gold">
                                                 <p>데이터 수정</p>
                                                 {modifyList}
                                             </Timeline.Item>
@@ -232,7 +278,7 @@ const RequestDetailPage = (props) => {
                                             </Timeline.Item>
                                         }
                                         {
-                                            layerList.length > 0 && <Timeline.Item color="grey">
+                                            layerList.length > 0 && <Timeline.Item>
                                                 <p>레이어 추가</p>
                                                 {layerList}
                                             </Timeline.Item>
@@ -240,16 +286,19 @@ const RequestDetailPage = (props) => {
                                     </Timeline>
                                 }
                             </Form.Item>
-                            {
-                                repositoryInfo.authority === "OWNER" && requestStatus === "WAITING" && <Form.Item wrapperCol={tailFormItemLayout}>
-                                    <Button type="primary" onClick={onClickMerge}>
-                                        반영하기
-                                    </Button>
-                                    <Button style={{ marginLeft: "10px" }} type="primary" onClick={onClickDenied} danger>
-                                        거절하기
-                                    </Button>
-                                </Form.Item>
-                            }
+                            <Form.Item>
+                                <Button type="primary" style={{marginLeft: "30%"}} onClick={onClickBack}>뒤로가기</Button>
+                                {
+                                    repositoryInfo.authority === "OWNER" && requestStatus === "WAITING" && <>
+                                        <Button type="primary" style={{marginLeft: "10px"}} color="green" onClick={onClickMerge}>
+                                            반영하기
+                                        </Button>
+                                        <Button style={{ marginLeft: "10px" }} type="primary" onClick={onClickDenied} danger>
+                                            거절하기
+                                        </Button>
+                                        </>
+                                }
+                            </Form.Item>
                             <div>
                                 <h1 style={{ fontSize: '2rem'}}> 변경사항 살펴보기 </h1>
                                 <div style={{ display: 'flex', justifyContent: 'center' }}>

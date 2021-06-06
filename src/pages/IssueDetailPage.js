@@ -1,23 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import {Comment, List, Avatar, Col, Row, Form, Button, Table, Tag, Input} from 'antd';
+import {Comment, List, Avatar, Col, Row, Form, Button, Tag, Input} from 'antd';
 import { CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import CommonLayout from "../components/Layout/CommonLayout";
 import TextArea from "antd/es/input/TextArea";
 import Api from "../util/Api";
 import RequestForm from "../components/Repository/RequestForm";
-
-const data = [
-    {
-        author:'doil',
-        profile: 'NoProfile.png',
-        content:'hello'
-    },
-    {
-        author:'doil',
-        profile: 'NoProfile.png',
-        content:'hello'
-    }
-]
 
 const Editor = ({ onChange, onSubmit, submitting, value }) => (
     <>
@@ -133,11 +120,11 @@ const IssueDetailPage = (props) => {
             return
         }
         let dataToSubmit = {
-            "author": props.user.userName,
+            "author": props.user.userId,
             "content": review,
             "profile":props.user.profile
         }
-        console.log("REVIEW", dataToSubmit)
+
         await Api.post(props.location.pathname, dataToSubmit)
             .then(response => console.log(response))
             .catch(e => console.log(e))
@@ -145,8 +132,8 @@ const IssueDetailPage = (props) => {
         setSubmitting(true)
         setTimeout(() => {
             setSubmitting(false)
-            const a = new Date().getTimezoneOffset() * 60000
-            const today = new Date(Date.now() - a)
+            const offset = new Date().getTimezoneOffset() * 60000
+            const today = new Date(Date.now() - offset)
             setReviewList([
                 ...reviewList,
                 {
@@ -168,6 +155,10 @@ const IssueDetailPage = (props) => {
             .catch(err => err.response)
     }
 
+    const onClickBack = () => {
+        props.history.push(`/${props.match.params.userId}/repositories/${props.match.params.repositoryName}`)
+    }
+
     return (
         <>
             {
@@ -176,8 +167,9 @@ const IssueDetailPage = (props) => {
                     <Row style={{textAlign:'left'}}>
                         <Col span={5}></Col>
                         <Col span={14}>
-
-
+                            <p style={{marginTop:"30px", fontSize:"35px", textAlign: "center"}}>
+                                지적사항 보기
+                            </p>
                             <RequestForm>
                                 <div style={{marginTop:'20px'}}>
                                     <b>작성자 :</b>
@@ -227,22 +219,7 @@ const IssueDetailPage = (props) => {
                                     <TextArea style={{color: "black"}} rows={10} disabled/>
                                 </Form.Item>
                             </RequestForm>
-
-                            {/*<Table pagination={false}*/}
-                            {/*       dataSource={[{key:'1', content: `${issueContent}`, height:'100px', columnWidth:"400px"}]}*/}
-                            {/*       columns={[{title: `${title}`, dataIndex:'content'}]}*/}
-                            {/*       footer={() => (*/}
-                            {/*           <>*/}
-                            {/*               <b>작성자 : </b>*/}
-                            {/*               <Avatar src={profile ? `${Api.defaults.baseURL}/files/${profile}` : `${Api.defaults.baseURL}/files/NoProfile.png`}*/}
-                            {/*                       size={20}*/}
-                            {/*                       shape='circle'*/}
-                            {/*                       style={{marginLeft:'10px', marginRight:'5px'}}*/}
-                            {/*               />*/}
-                            {/*               {author}*/}
-                            {/*           </>*/}
-                            {/*       )}*/}
-                            {/*/>*/}
+                            <Button style={{marginLeft: "45%"}} type="primary" onClick={onClickBack}>뒤로가기</Button>
                             <CommentList key={Math.random} comments={reviewList} />
                             <Comment
                                 avatar={

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Divider, Space, Tabs, List, Row, Col, Image } from 'antd';
+import { Divider, Space, Tabs, List, Row, Col, Image, Empty } from 'antd';
 import {
     BookOutlined,
     EnvironmentOutlined,
@@ -19,10 +19,13 @@ import {withRouter} from "react-router-dom";
 const { TabPane } = Tabs;
 
 const typemap = {
-    'LIKE': '를 좋아합니다.',
-    'CLONE': '를 가져갔습니다.',
-    'REQUEST': '에 변경 요청을 남겼습니다.',
-    'ISSUE': '를 지적했습니다.'
+    'LIKE': '지도를 좋아합니다.',
+    'CLONE': '지도를 가져갔습니다.',
+    'REQUEST': '지도에 변경 요청을 남겼습니다.',
+    'ISSUE': '지도를 지적했습니다.',
+    'REQUEST_DENIED': '변경요청을 거부했습니다.',
+    'REQUEST_ACCEPTED': '변경요청을 승인했습니다.',
+    'ISSUE_OK': '지적을 확인했습니다.'
 }
 
 
@@ -157,33 +160,41 @@ const MypageTabContainer = (props) => {
                     <div style={{ marginBottom: "20px", textAlign: "left", fontSize: "20px", fontWeight: "600" }}>{userInfo.userName}님의 지도
                         목록
                     </div>
+                    {mapList.length !== 0 ?
                     <Space size="large" style={{ width: "100%" }}>
                         {mapList?.map(card => (
                             <Card card={card} />
                         ))}
-                    </Space>
+                    </Space>:
+                        <Empty/>
+                    }
+
                     <Divider />
                     <Row>
-                        <Col span={12}>
-                            <div style={{
-                                marginBottom: "20px",
-                                textAlign: "left",
-                                fontSize: "20px",
-                                fontWeight: "600"
-                            }}>{userInfo.userName}님의 지도별 좋아요 수 TOP 5
-                            </div>
-                            <Doughnut data={likeChartData} />
-                        </Col>
-                        <Col span={12}>
-                            <div style={{
-                                marginBottom: "20px",
-                                textAlign: "left",
-                                fontSize: "20px",
-                                fontWeight: "600"
-                            }}>{userInfo.userName}님의 지도별 조회 수 TOP 5
-                            </div>
-                            <Doughnut data={visitChartData} />
-                        </Col>
+                        {likeCounts.length !== 0 &&
+                            <Col span={12}>
+                                <div style={{
+                                    marginBottom: "20px",
+                                    textAlign: "left",
+                                    fontSize: "20px",
+                                    fontWeight: "600"
+                                }}>{userInfo.userName}님의 지도별 좋아요 수 TOP 5
+                                </div>
+                                <Doughnut data={likeChartData} />
+                            </Col>
+                        }
+                        {visitCounts.length !== 0 &&
+                            <Col span={12}>
+                                <div style={{
+                                    marginBottom: "20px",
+                                    textAlign: "left",
+                                    fontSize: "20px",
+                                    fontWeight: "600"
+                                }}>{userInfo.userName}님의 지도별 조회 수 TOP 5
+                                </div>
+                                <Doughnut data={visitChartData} />
+                            </Col>
+                        }
                     </Row>
                 </TabPane>
                 <TabPane tab={<span><EnvironmentOutlined />Maps</span>} key="2">
@@ -222,7 +233,7 @@ const MypageTabContainer = (props) => {
                                                 width='2rem'
                                                 height='2rem'
                                                 alt="example"
-                                                src={item.thumbnail ? Api.defaults.baseURL + '/files/' + item.thumbnail : "no-image.svg"}
+                                                src={item.thumbnail ? Api.defaults.baseURL + '/files/' + item.thumbnail : "no-image3.png"}
                                                 style={{ borderRadius: "10%" }}
                                                 preview={false}
                                             />
@@ -274,7 +285,7 @@ const MypageTabContainer = (props) => {
                                                     alt="example"
                                                     src={Api.defaults.baseURL + '/files/' + alarm.thumbnail}
                                                     style={{ borderRadius: "10%" }}
-                                                    fallback="no-image.svg"
+                                                    fallback="no-image3.png"
                                                     preview={false}
                                                 />
                                             }
@@ -282,12 +293,12 @@ const MypageTabContainer = (props) => {
                                                 <a href={`/${props.userId}/repositories/${alarm.spaceName}`}
                                                     style={{ marginLeft: "10px", fontSize: "14px" }}>
                                                     <text style={{ fontWeight: "bold" }}>{alarm.srcMemberName}</text>
-                                                    님이 회원님의 지도{typemap[alarm.alarmType]}
+                                                    님이 회원님의 {typemap[alarm.alarmType]}
                                                 </a> :
                                                 <a href={`/${props.userId}/repositories/${alarm.spaceName}`}
                                                     style={{ marginLeft: "10px", fontSize: "14px", color: '#36A2EB' }}>
                                                     <text style={{ fontWeight: "bold" }}>{alarm.srcMemberName}</text>
-                                                    님이 회원님의 지도{typemap[alarm.alarmType]}
+                                                    님이 회원님의 {typemap[alarm.alarmType]}
                                                 </a>
                                             }
                                         />

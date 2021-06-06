@@ -38,14 +38,18 @@ function CardView({ card, history }) {
             </div>
             <h4><text style={{ color:'#808080' }}>created By:</text> {card.userName}</h4>
             {card.description &&
-            <h3>지도 설명 : {card.description}</h3>
+            <div>
+                <Divider>
+                    <h4 style={{ color:'#808080' }}> 지도 설명</h4>
+                </Divider>
+                <h3>{card.description}</h3>
+            </div>
             }
             {card.categories.length > 0 &&
             <div>
-                <Divider/>
-                <div style={{ textAlign: "center" }}>
-                    <h2 style={{ color:'#808080' }}> # 카테고리 </h2>
-                </div>
+                <Divider>
+                    <h4 style={{ color:'#808080' }}> 카테고리</h4>
+                </Divider>
             </div>
             }
             <div style={{ textAlign: "center" }}>
@@ -106,7 +110,7 @@ function CardView({ card, history }) {
                         width='17.5rem'
                         height='17.5rem'
                         alt="example"
-                        src={card.thumbnail ? Api.defaults.baseURL + '/files/' + card.thumbnail : "no-image.svg"}
+                        src={card.thumbnail ? Api.defaults.baseURL + '/files/' + card.thumbnail : "no-image3.png"}
                         preview={false}
                     />
                 </a>

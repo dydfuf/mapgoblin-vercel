@@ -38,8 +38,6 @@ let hrefId = "";
 let hrefRepo = "";
 
 function getDate(isoDate) {
-    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
     const createdDate = isoDate.split(/-|T/);
     const year = createdDate[0];
     const month = parseInt(createdDate[1]).toString();
@@ -180,8 +178,6 @@ const RepositoryPage = (props) => {
 
                 if (response.data.thumbnail !== null) {
                     setThumbnail(Api.defaults.baseURL + '/files/' + response.data.thumbnail);
-                } else {
-                    setThumbnail(Api.defaults.baseURL + '/files/no-image.svg');
                 }
 
             }).catch(error => {
@@ -543,7 +539,10 @@ const RepositoryPage = (props) => {
                     <Breadcrumb.Item>
                         {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
                         <a href="">{repositoryName}</a>
-                        {repositoryInfo.source === "CLONE" && <div style={{ fontSize: "15px" }}>원본 지도 : <a style={{ color: "blue" }} href={'/' + repositoryInfo.hostUserId + '/repositories/' + repositoryInfo.hostRepoName}>{`/${repositoryInfo.hostUserId}/repositories/${repositoryInfo.hostRepoName}`}</a></div>}
+                        {repositoryInfo.source === "CLONE" && <div style={{ fontSize: "15px" }}>원본 지도 :
+                            {repositoryInfo.hostUserId === null ?
+                                <p style={{ color: "blue", display: "inline" }}>&nbsp;원본 지도가 삭제되었습니다.</p> :
+                                <a style={{ color: "blue" }} href={'/' + repositoryInfo.hostUserId + '/repositories/' + repositoryInfo.hostRepoName}>&nbsp;{`/${repositoryInfo.hostUserId}/repositories/${repositoryInfo.hostRepoName}`}</a>}</div>}
                     </Breadcrumb.Item>
                 </Breadcrumb>
                 <Tabs defaultActiveKey="1" size="large" style={{ padding: '0px 30px 10px 30px' }}>
@@ -558,9 +557,7 @@ const RepositoryPage = (props) => {
                                 </Col>
                                 <Col flex="auto" style={{ marginLeft: '50px', marginRight: '50px' }}>
                                     <Row style={{ alignContent: "center", justifyContent: "center" }}>
-                                        {thumbnail !== "" && <Image preview={false} src={thumbnail} alt="Thumbnail" style={{ width: '50vw', height: '50vh' }}
-                                            fallback="/no-image.svg"
-                                        />}
+                                        {thumbnail !== "" ? <Image preview={false} src={thumbnail} alt="Thumbnail" style={{ width: '50vw', height: '50vh' }}/> : <Image preview={false} src="/no-image3.png" alt="Thumbnail" style={{ width: '50vw', height: '50vh' }}/>}
                                     </Row>
                                 </Col>
                                 <Col flex="auto">
